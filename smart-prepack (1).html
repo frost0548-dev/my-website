@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Pre-pack · ระบบจัดการยา</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+:root {
+  --teal-50:#e0f5f1;--teal-100:#b2e6dc;--teal-400:#26bfa8;--teal-600:#00897b;--teal-800:#00574d;--teal-900:#003d36;
+  --amber-100:#fff3cd;--amber-400:#ffb300;--amber-800:#6d4c00;
+  --red-100:#ffe5e5;--red-400:#ef5350;--red-800:#5c1a1a;
+  --blue-100:#e3f0ff;--blue-400:#2979ff;--blue-800:#0d2d6b;
+  --purple-100:#f0ebff;--purple-400:#7c4dff;--purple-800:#3d1a8e;
+  --ink:#0f1c1a;--ink-2:#2d3f3c;--ink-3:#4a5c59;--mist:#8fa8a4;
+  --bg:#f4faf9;--bg-card:#ffffff;--border:#d0e8e4;
+  --sidebar-w:260px;
+  --font:'IBM Plex Sans Thai',sans-serif;--mono:'IBM Plex Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:100vh;display:flex}
+#sidebar{width:var(--sidebar-w);min-height:100vh;background:var(--teal-900);display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:100;transition:transform .3s ease;overflow-y:auto}
+.sidebar-logo{padding:22px 20px 16px;border-bottom:1px solid rgba(255,255,255,.08)}
+.logo-mark{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.logo-icon{width:34px;height:34px;background:var(--teal-400);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px}
+.logo-text{font-size:17px;font-weight:600;color:#fff;letter-spacing:-.3px}
+.logo-sub{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.5px;font-family:var(--mono);text-transform:uppercase;padding-left:44px}
+.sidebar-nav{flex:1;padding:10px 0}
+.nav-section{padding:8px 20px 3px;font-size:10px;font-weight:500;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase;font-family:var(--mono)}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;color:rgba(255,255,255,.65);cursor:pointer;border-left:3px solid transparent;transition:all .2s;font-size:13.5px}
+.nav-item:hover{color:#fff;background:rgba(255,255,255,.05)}
+.nav-item.active{color:#fff;background:rgba(38,191,168,.12);border-left-color:var(--teal-400);font-weight:500}
+.nav-icon{width:17px;height:17px;flex-shrink:0;opacity:.7}
+.nav-item.active .nav-icon{opacity:1}
+.nav-badge{margin-left:auto;background:var(--red-400);color:#fff;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;font-family:var(--mono)}
+.sidebar-footer{padding:12px 20px;border-top:1px solid rgba(255,255,255,.08);font-size:10px;color:rgba(255,255,255,.25);font-family:var(--mono)}
+#main{margin-left:var(--sidebar-w);flex:1;min-height:100vh}
+.topbar{background:var(--bg-card);border-bottom:1px solid var(--border);padding:0 26px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.topbar-title{font-size:14.5px;font-weight:500;color:var(--ink)}
+.topbar-actions{display:flex;align-items:center;gap:10px}
+.page{display:none;padding:22px 26px;animation:fadeIn .2s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.page-header{margin-bottom:18px}
+.page-title{font-size:20px;font-weight:600;color:var(--ink);letter-spacing:-.4px}
+.page-subtitle{font-size:12.5px;color:var(--mist);margin-top:3px}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px}
+.stat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:13px;padding:16px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s}
+.stat-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,87,77,.08)}
+.stat-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:3px}
+.stat-card.teal::before{background:var(--teal-400)}.stat-card.amber::before{background:var(--amber-400)}
+.stat-card.red::before{background:var(--red-400)}.stat-card.blue::before{background:var(--blue-400)}.stat-card.purple::before{background:var(--purple-400)}
+.stat-label{font-size:10.5px;font-weight:500;color:var(--mist);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;font-family:var(--mono)}
+.stat-value{font-size:28px;font-weight:600;color:var(--ink);line-height:1;font-family:var(--mono);letter-spacing:-1px}
+.stat-icon{position:absolute;right:12px;bottom:10px;font-size:24px;opacity:.07}
+.chart-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+.chart-grid-3{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:16px}
+.chart-card{background:var(--bg-card);border:1px solid var(--border);border-radius:13px;padding:18px}
+.chart-title{font-size:13px;font-weight:500;color:var(--ink-2);margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.chart-subtitle{font-size:11px;color:var(--mist);font-family:var(--mono)}
+.chart-wrap{position:relative;height:220px}
+.chart-wrap-tall{position:relative;height:260px}
+.chart-wrap-sm{position:relative;height:200px;display:flex;align-items:center;justify-content:center}
+.table-card{background:var(--bg-card);border:1px solid var(--border);border-radius:13px;overflow:hidden}
+.table-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.filter-group{display:flex;gap:6px;flex-wrap:wrap}
+.filter-btn{padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;font-size:12px;color:var(--ink-3);cursor:pointer;font-family:var(--font);transition:all .15s}
+.filter-btn:hover{border-color:var(--teal-400);color:var(--teal-600)}
+.filter-btn.active{background:var(--teal-400);border-color:var(--teal-400);color:#fff;font-weight:500}
+.table-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:var(--bg);padding:9px 14px;text-align:left;font-size:10.5px;font-weight:500;color:var(--mist);text-transform:uppercase;letter-spacing:.7px;font-family:var(--mono);white-space:nowrap;border-bottom:1px solid var(--border)}
+tbody tr{border-bottom:1px solid var(--border);transition:background .15s}
+tbody tr:last-child{border-bottom:none}
+[id^="editrow-"] td{padding:0!important}
+tbody tr:not([id^="editrow-"]):hover{background:var(--teal-50)}
+td{padding:11px 14px;color:var(--ink-2);vertical-align:middle}
+.med-name{font-weight:500;color:var(--ink)}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:500;white-space:nowrap;font-family:var(--mono)}
+.badge-teal{background:var(--teal-50);color:var(--teal-800)}.badge-amber{background:var(--amber-100);color:var(--amber-800)}
+.badge-red{background:var(--red-100);color:var(--red-800)}.badge-blue{background:var(--blue-100);color:var(--blue-800)}
+.badge-purple{background:var(--purple-100);color:var(--purple-800)}.badge-gray{background:#f0f0f0;color:#555}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:none;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font);transition:all .15s}
+.btn-primary{background:var(--teal-600);color:#fff}.btn-primary:hover{background:var(--teal-800)}
+.btn-outline{background:transparent;color:var(--ink-2);border:1px solid var(--border)}.btn-outline:hover{border-color:var(--teal-400);color:var(--teal-600)}
+.btn-ghost{background:transparent;color:var(--ink-3);padding:5px 9px}.btn-ghost:hover{background:var(--teal-50);color:var(--teal-600)}
+.btn-danger{background:transparent;color:var(--red-400);padding:5px 9px}.btn-danger:hover{background:var(--red-100)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.form-card{background:var(--bg-card);border:1px solid var(--border);border-radius:13px;overflow:hidden;max-width:780px;margin:0 auto}
+.form-card-header{padding:16px 22px;background:var(--teal-900);color:#fff;font-size:13.5px;font-weight:500;display:flex;align-items:center;gap:8px}
+.form-body{padding:22px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+.form-label{font-size:11px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-family:var(--mono)}
+.form-input,.form-select,.form-textarea{padding:9px 13px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;font-family:var(--font);color:var(--ink);background:var(--bg);transition:border-color .15s,box-shadow .15s;outline:none;width:100%}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--teal-400);box-shadow:0 0 0 3px rgba(38,191,168,.12);background:#fff}
+.form-textarea{resize:vertical;min-height:70px}
+.form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238fa8a4' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px}
+.form-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:flex-end;gap:10px;background:var(--bg)}
+.form-section-label{font-size:11.5px;font-weight:600;color:var(--teal-700,#00695c);text-transform:uppercase;letter-spacing:.6px;font-family:var(--mono);padding:12px 0 4px;border-bottom:1px solid var(--teal-100);margin-bottom:2px;grid-column:1/-1}
+.inline-action-box{display:none;background:var(--teal-50);border:1px solid var(--teal-100);border-radius:10px;padding:14px;margin-top:4px;grid-column:1/-1}
+.inline-action-box.show{display:block}
+.inline-action-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.status-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;font-family:var(--mono)}
+.status-pending{background:#fff3cd;color:#856404}
+.status-done{background:var(--teal-50);color:var(--teal-800)}
+/* EXPIRY CARDS */
+.alert-list{display:flex;flex-direction:column;gap:10px}
+.expiry-card{background:var(--bg-card);border:1px solid var(--border);border-radius:13px;border-left:4px solid var(--border);overflow:hidden;transition:box-shadow .2s}
+.expiry-card:hover{box-shadow:0 4px 16px rgba(0,87,77,.07)}
+.expiry-card.critical{border-left-color:var(--red-400)}
+.expiry-card.warning{border-left-color:var(--amber-400)}
+.expiry-card.info{border-left-color:var(--blue-400)}
+.expiry-card-header{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;user-select:none}
+.expiry-card-body{display:none;padding:0 18px 16px;border-top:1px solid var(--border)}
+.expiry-card-body.open{display:block}
+.expiry-med{font-weight:500;font-size:14.5px;color:var(--ink);margin-bottom:4px}
+.expiry-meta{font-size:11.5px;color:var(--mist);font-family:var(--mono)}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.detail-item{display:flex;flex-direction:column;gap:3px}
+.detail-label{font-size:10.5px;font-weight:500;color:var(--mist);text-transform:uppercase;letter-spacing:.5px;font-family:var(--mono)}
+.detail-value{font-size:13px;color:var(--ink-2)}
+.detail-value.highlight{font-weight:500;color:var(--teal-600)}
+.inspect-form{margin-top:14px;padding-top:14px;border-top:1px dashed var(--border)}
+.inspect-title{font-size:11.5px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px;font-family:var(--mono);margin-bottom:12px}
+.inspect-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.check-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:10px 0}
+.check-item{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-2);padding:5px 0}
+.check-item input{width:15px;height:15px;accent-color:var(--teal-600);cursor:pointer;flex-shrink:0}
+.check-item.done-check label{font-weight:600;color:var(--teal-600)}
+.chevron{transition:transform .2s;flex-shrink:0;color:var(--mist)}
+.chevron.open{transform:rotate(180deg)}
+.section-divider{display:flex;align-items:center;gap:12px;margin:18px 0 12px;font-size:11.5px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.6px;font-family:var(--mono)}
+.section-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.loader-overlay{position:fixed;inset:0;background:rgba(255,255,255,.7);display:none;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(2px)}
+.loader-spinner{width:38px;height:38px;border:3px solid var(--teal-100);border-top-color:var(--teal-400);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty-state{text-align:center;padding:56px 20px;color:var(--mist)}
+.empty-icon{font-size:44px;margin-bottom:10px}.empty-text{font-size:14px}
+.menu-toggle{display:none;background:none;border:none;cursor:pointer;padding:4px;color:var(--ink)}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99}
+@media(max-width:768px){
+  #sidebar{transform:translateX(-100%)}#sidebar.open{transform:translateX(0)}
+  .sidebar-overlay.open{display:block}#main{margin-left:0}
+  .page{padding:14px 16px}.topbar{padding:0 14px}
+  .chart-grid-2,.chart-grid-3{grid-template-columns:1fr}
+  .form-grid,.detail-grid,.inspect-grid,.inline-action-grid{grid-template-columns:1fr}
+  .check-grid{grid-template-columns:1fr}.menu-toggle{display:block}
+}
+.swal2-popup{font-family:var(--font)!important;border-radius:16px!important}
+.row-editing td{background:var(--teal-50)!important}
+[id^="editrow-"] .form-group{display:flex;flex-direction:column;gap:5px}
+@media(max-width:768px){[id^="editrow-"] div[style*="grid-template-columns:1fr 1fr 1fr"]{grid-template-columns:1fr!important}}
+.swal2-confirm{background:var(--teal-600)!important}
+</style>
+</head>
+<body>
+<div class="loader-overlay" id="loader"><div class="loader-spinner"></div></div>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark"><div class="logo-icon">💊</div><span class="logo-text">SmartPack</span></div>
+    <div class="logo-sub">Pre-pack Management v2.0</div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-section">ภาพรวม</div>
+    <div class="nav-item active" onclick="navigate('dashboard',this)">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-section">รายงาน</div>
+    <div class="nav-item" onclick="navigate('analytics',this)">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      กราฟสรุปรายเดือน
+    </div>
+    <div class="nav-item" onclick="navigate('report',this)">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      รายงานความคลาดเคลื่อน
+    </div>
+    <div class="nav-item" id="nav-expiry" onclick="navigate('expiry',this)">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      ตรวจสอบวันหมดอายุ
+      <span class="nav-badge" id="expiry-badge" style="display:none">0</span>
+    </div>
+    <div class="nav-section">จัดการข้อมูล</div>
+    <div class="nav-item" onclick="navigate('add',this)">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      บันทึกข้อมูลยา
+    </div>
+  </div>
+  <div class="sidebar-footer">v2.0 · Smart Pre-pack System</div>
+</nav>
+
+<!-- MAIN -->
+<div id="main">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="menu-toggle" onclick="toggleSidebar()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <span class="topbar-title" id="topbar-title">Dashboard</span>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-outline btn-sm" onclick="refreshData()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+        อัปเดต
+      </button>
+      <button class="btn btn-primary btn-sm" onclick="navigate('add',document.querySelector('[onclick*=\'add\']'))">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        บันทึกใหม่
+      </button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="page-header"><div class="page-title">ภาพรวมระบบ</div><div class="page-subtitle">สรุปสถานการณ์ความคลาดเคลื่อนและยาใกล้หมดอายุ</div></div>
+    <div class="stat-grid">
+      <div class="stat-card teal"><div class="stat-label">รายการทั้งหมด</div><div class="stat-value" id="d-total">0</div><div class="stat-icon">📋</div></div>
+      <div class="stat-card amber"><div class="stat-label">ใกล้หมดอายุ 3–6 ด.</div><div class="stat-value" id="d-near">0</div><div class="stat-icon">⏰</div></div>
+      <div class="stat-card red"><div class="stat-label">หมดอายุแล้ว</div><div class="stat-value" id="d-expired">0</div><div class="stat-icon">⚠️</div></div>
+      <div class="stat-card blue"><div class="stat-label">เก็บผิดชั้น (%)</div><div class="stat-value" id="d-wrong">0%</div><div class="stat-icon">📦</div></div>
+      <div class="stat-card purple"><div class="stat-label">ดำเนินการแล้ว</div><div class="stat-value" id="d-done">0</div><div class="stat-icon">✅</div></div>
+    </div>
+    <div class="chart-grid-3">
+      <div class="chart-card">
+        <div class="chart-title">สถิติรายเดือน (ปีปัจจุบัน)<span class="chart-subtitle">ทั้งหมด vs จัดการแล้ว</span></div>
+        <div class="chart-wrap"><canvas id="dashLineChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">สัดส่วนประเภท</div>
+        <div class="chart-wrap-sm"><canvas id="dashDonutChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ANALYTICS -->
+  <div class="page" id="page-analytics">
+    <div class="page-header"><div class="page-title">กราฟสรุปรายเดือน</div><div class="page-subtitle">จำนวนความคลาดเคลื่อนรวมและจำนวนการจัดการแยกตามประเภท</div></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <label style="font-size:12px;color:var(--mist);font-family:var(--mono);font-weight:500">ปี ค.ศ.:</label>
+      <select class="form-select" id="analytics-year" style="width:130px" onchange="renderAnalytics()"></select>
+    </div>
+    <div class="chart-card" style="margin-bottom:14px">
+      <div class="chart-title">จำนวนความคลาดเคลื่อนรวมรายเดือน — แยกตามประเภท<span class="chart-subtitle">Stacked Bar Chart</span></div>
+      <div class="chart-wrap-tall"><canvas id="barStackedChart"></canvas></div>
+    </div>
+    <div class="chart-grid-2">
+      <div class="chart-card">
+        <div class="chart-title">จำนวนการจัดการรายเดือน<span class="chart-subtitle">แยก Action</span></div>
+        <div class="chart-wrap"><canvas id="barActionChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">สัดส่วนการจัดการทั้งหมด</div>
+        <div class="chart-wrap-sm"><canvas id="donutActionChart"></canvas></div>
+      </div>
+    </div>
+    <div class="section-divider">ตารางสรุปรายเดือน</div>
+    <div class="table-card">
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>เดือน</th><th>รวมทั้งหมด</th><th>เก็บผิดชั้น</th><th>ใกล้หมด 3 ด.</th><th>ใกล้หมด 6 ด.</th><th>หมดอายุ</th><th>จัดการแล้ว</th></tr></thead>
+          <tbody id="analytics-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- REPORT -->
+  <div class="page" id="page-report">
+    <div class="page-header"><div class="page-title">รายงานความคลาดเคลื่อน</div><div class="page-subtitle">รายการทั้งหมดที่บันทึกในระบบ เรียงตามวันที่ล่าสุด</div></div>
+    <div class="table-card">
+      <div class="table-header">
+        <div class="filter-group">
+          <button class="filter-btn active" onclick="setFilter('all',this)">ทั้งหมด</button>
+          <button class="filter-btn" onclick="setFilter('wrong',this)">เก็บผิดชั้น</button>
+          <button class="filter-btn" onclick="setFilter('near3',this)">ใกล้หมด 3 ด.</button>
+          <button class="filter-btn" onclick="setFilter('near6',this)">ใกล้หมด 6 ด.</button>
+          <button class="filter-btn" onclick="setFilter('expired',this)">หมดอายุ</button>
+        </div>
+        <span style="font-size:12px;color:var(--mist);font-family:var(--mono)" id="table-count">0 รายการ</span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>วันที่บันทึก</th><th>ชื่อยา</th><th>ประเภท</th><th>วันหมดอายุ</th><th>การจัดการ</th><th>สถานะ</th><th style="text-align:center">ดำเนินการ</th></tr></thead>
+          <tbody id="report-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPIRY -->
+  <div class="page" id="page-expiry">
+    <div class="page-header"><div class="page-title">ตรวจสอบวันหมดอายุ</div><div class="page-subtitle">Priority list — กรอกรายละเอียดการดำเนินการได้โดยตรงในแต่ละรายการ</div></div>
+
+    <!-- Filter bar -->
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:13px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--mist)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span style="font-size:11.5px;font-weight:600;color:var(--ink-3);font-family:var(--mono);white-space:nowrap">ค้นหาตามวันหมดอายุ:</span>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:6px">
+          <label style="font-size:11px;color:var(--mist);font-family:var(--mono)">เดือน</label>
+          <select class="form-select" id="expiry-filter-month" style="width:110px;padding:6px 30px 6px 10px;font-size:12.5px" onchange="renderExpiry()">
+            <option value="">ทั้งหมด</option>
+            <option value="1">มกราคม</option>
+            <option value="2">กุมภาพันธ์</option>
+            <option value="3">มีนาคม</option>
+            <option value="4">เมษายน</option>
+            <option value="5">พฤษภาคม</option>
+            <option value="6">มิถุนายน</option>
+            <option value="7">กรกฎาคม</option>
+            <option value="8">สิงหาคม</option>
+            <option value="9">กันยายน</option>
+            <option value="10">ตุลาคม</option>
+            <option value="11">พฤศจิกายน</option>
+            <option value="12">ธันวาคม</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <label style="font-size:11px;color:var(--mist);font-family:var(--mono)">ปี พ.ศ.</label>
+          <select class="form-select" id="expiry-filter-year" style="width:110px;padding:6px 30px 6px 10px;font-size:12.5px" onchange="renderExpiry()">
+            <option value="">ทั้งหมด</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <label style="font-size:11px;color:var(--mist);font-family:var(--mono)">สถานะ</label>
+          <select class="form-select" id="expiry-filter-status" style="width:130px;padding:6px 30px 6px 10px;font-size:12.5px" onchange="renderExpiry()">
+            <option value="">ทั้งหมด</option>
+            <option value="pending">⏳ รอดำเนินการ</option>
+            <option value="done">✓ ดำเนินการแล้ว</option>
+          </select>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="clearExpiryFilters()" style="font-size:11.5px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          ล้างตัวกรอง
+        </button>
+      </div>
+      <span style="margin-left:auto;font-size:11.5px;color:var(--mist);font-family:var(--mono)" id="expiry-count">0 รายการ</span>
+    </div>
+
+    <div class="alert-list" id="expiry-list"></div>
+  </div>
+
+  <!-- ADD/EDIT FORM -->
+  <div class="page" id="page-add">
+    <div class="page-header"><div class="page-title" id="form-page-title">บันทึกข้อมูลความคลาดเคลื่อน</div><div class="page-subtitle">กรอกข้อมูลยาที่พบความผิดปกติในระบบ pre-pack</div></div>
+    <div class="form-card">
+      <div class="form-card-header" id="form-header">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        บันทึกรายการใหม่
+      </div>
+      <form id="prepackForm">
+        <input type="hidden" id="editId">
+        <div class="form-body">
+          <div class="form-grid">
+            <div class="form-section-label">📋 ข้อมูลยาและความคลาดเคลื่อน</div>
+            <div class="form-group"><label class="form-label">วันที่ตรวจพบ *</label><input type="date" class="form-input" id="f-date" required></div>
+            <div class="form-group"><label class="form-label">ชื่อยา *</label><input type="text" class="form-input" id="f-name" placeholder="ระบุชื่อยา..." required></div>
+            <div class="form-group"><label class="form-label">Lot / Batch Number</label><input type="text" class="form-input" id="f-lot" placeholder="เช่น LOT-A2024"></div>
+            <div class="form-group"><label class="form-label">จำนวน (หน่วย)</label><input type="number" class="form-input" id="f-qty" placeholder="0" min="0"></div>
+            <div class="form-group full"><label class="form-label">ประเภทความคลาดเคลื่อน *</label>
+              <select class="form-select" id="f-type" required onchange="onTypeChange()">
+                <option value="" disabled selected>เลือกประเภท...</option>
+                <option value="เก็บยาผิดชั้น">เก็บยาผิดชั้น</option>
+                <option value="ใกล้หมดอายุภายใน 3 เดือน">ยาใกล้หมดอายุภายใน 3 เดือน</option>
+                <option value="ใกล้หมดอายุภายใน 6 เดือน">ยาใกล้หมดอายุภายใน 6 เดือน</option>
+                <option value="หมดอายุแล้ว">หมดอายุแล้ว</option>
+              </select>
+            </div>
+            <div class="form-group" id="expiry-group" style="display:none"><label class="form-label">วันหมดอายุหน้าแผง *</label><input type="date" class="form-input" id="f-expiry"></div>
+            <div class="form-group"><label class="form-label">การจัดการ / Action *</label>
+              <select class="form-select" id="f-action" required onchange="onActionChange()">
+                <option value="" disabled selected>เลือกการจัดการ...</option>
+                <option value="ติด Sticker ยาใกล้หมดอายุ">ติด Sticker ยาใกล้หมดอายุ</option>
+                <option value="จัดเก็บลงชั้นให้ถูกต้อง">จัดเก็บลงชั้นให้ถูกต้อง</option>
+                <option value="คัดแยกออกเพื่อรอทำลาย">คัดแยกออกเพื่อรอทำลาย</option>
+                <option value="คืนคลังยา">คืนคลังยา</option>
+              </select>
+            </div>
+            <div class="inline-action-box" id="inline-action-box">
+              <div id="inline-action-content"></div>
+            </div>
+            <div class="form-section-label">👤 ข้อมูลผู้บันทึก</div>
+            <div class="form-group"><label class="form-label">ผู้ตรวจพบ</label><input type="text" class="form-input" id="f-inspector" placeholder="ชื่อ-สกุล"></div>
+            <div class="form-group"><label class="form-label">ตำแหน่ง</label><input type="text" class="form-input" id="f-position" placeholder="เช่น เภสัชกร, เจ้าหน้าที่"></div>
+            <div class="form-group full"><label class="form-label">บันทึกเพิ่มเติม</label><textarea class="form-textarea" id="f-note" placeholder="หมายเหตุหรือข้อมูลเพิ่มเติม..."></textarea></div>
+          </div>
+        </div>
+        <div class="form-footer">
+          <button type="button" class="btn btn-outline" onclick="cancelForm()">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            บันทึกข้อมูล
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+let allData=[], currentFilter='all', charts={};
+
+function getDB(){try{return JSON.parse(localStorage.getItem('spp_v3')||'[]')}catch{return[]}}
+function saveDB(d){localStorage.setItem('spp_v3',JSON.stringify(d))}
+function fmt(d){return d.toISOString().split('T')[0]}
+function val(id){const e=document.getElementById(id);return e?e.value:''}
+function chk(id){const e=document.getElementById(id);return e?e.checked:false}
+function dch(id,v){const e=document.getElementById(id);if(e)e.checked=v}
+function dval(id,v){const e=document.getElementById(id);if(e)e.value=v||''}
+
+function seedData(){
+  if(getDB().length>0)return;
+  const n=new Date(),Y=n.getFullYear(),M=n.getMonth();
+  saveDB([
+    {id:'1',date:fmt(new Date(Y,M-3,5)),name:'Paracetamol 500mg',lot:'LOT-P24',qty:50,type:'เก็บยาผิดชั้น',expiry:'-',action:'จัดเก็บลงชั้นให้ถูกต้อง',actionDone:true,actionDate:fmt(new Date(Y,M-3,6)),inspector:'นายสมชาย ใจดี',position:'เภสัชกร',note:''},
+    {id:'2',date:fmt(new Date(Y,M-2,15)),name:'Amoxicillin 250mg',lot:'LOT-A201',qty:30,type:'ใกล้หมดอายุภายใน 3 เดือน',expiry:fmt(new Date(Y,M+1,1)),action:'ติด Sticker ยาใกล้หมดอายุ',actionDone:true,stickerDate:fmt(new Date(Y,M-2,16)),stickerBy:'นางสาวนภา รักดี',stickerQty:'30',stickerLocation:'ชั้น A-3',chkStickerDone:true,chkFront:true,chkNotified:true,inspector:'นางสาวนภา รักดี',position:'เภสัชกร',note:'ล็อต B201'},
+    {id:'3',date:fmt(new Date(Y,M-2,20)),name:'Vitamin C 500mg',lot:'',qty:100,type:'ใกล้หมดอายุภายใน 6 เดือน',expiry:fmt(new Date(Y,M+4,10)),action:'ติด Sticker ยาใกล้หมดอายุ',actionDone:false,inspector:'นายกิตติ สมใจ',position:'เจ้าหน้าที่',note:''},
+    {id:'4',date:fmt(new Date(Y,M-1,3)),name:'Metformin 500mg',lot:'LOT-M24',qty:20,type:'หมดอายุแล้ว',expiry:fmt(new Date(Y,M-2,28)),action:'คัดแยกออกเพื่อรอทำลาย',actionDone:false,chkSeparated:true,chkLabeled:true,chkStored:false,chkReported:false,chkDestroyed:false,inspector:'นายสมชาย ใจดี',position:'เภสัชกร',note:'พบใน ward 3'},
+    {id:'5',date:fmt(new Date(Y,M,8)),name:'Atenolol 50mg',lot:'',qty:15,type:'เก็บยาผิดชั้น',expiry:'-',action:'จัดเก็บลงชั้นให้ถูกต้อง',actionDone:true,actionDate:fmt(new Date(Y,M,9)),inspector:'นางสาวนภา รักดี',position:'เภสัชกร',note:''},
+    {id:'6',date:fmt(new Date(Y,M,10)),name:'Amlodipine 5mg',lot:'LOT-AM05',qty:60,type:'ใกล้หมดอายุภายใน 3 เดือน',expiry:fmt(new Date(Y,M+2,20)),action:'คืนคลังยา',actionDone:false,inspector:'นายกิตติ สมใจ',position:'เจ้าหน้าที่',note:''},
+    {id:'7',date:fmt(new Date(Y,M-3,18)),name:'Ibuprofen 400mg',lot:'LOT-IB22',qty:40,type:'หมดอายุแล้ว',expiry:fmt(new Date(Y,M-4,1)),action:'คัดแยกออกเพื่อรอทำลาย',actionDone:true,destroyDate:fmt(new Date(Y,M-3,20)),destroyBy:'นายสมชาย ใจดี',destroyActual:fmt(new Date(Y,M-2,5)),destroyDoc:'DES-2024-001',chkSeparated:true,chkLabeled:true,chkStored:true,chkReported:true,chkDestroyed:true,inspector:'นายสมชาย ใจดี',position:'เภสัชกร',note:''},
+    {id:'8',date:fmt(new Date(Y,M-4,12)),name:'Omeprazole 20mg',lot:'',qty:25,type:'เก็บยาผิดชั้น',expiry:'-',action:'จัดเก็บลงชั้นให้ถูกต้อง',actionDone:true,actionDate:fmt(new Date(Y,M-4,12)),inspector:'นางสาวนภา รักดี',position:'เภสัชกร',note:''},
+  ]);
+}
+
+// ===== NAV =====
+const pageTitles={dashboard:'Dashboard',analytics:'กราฟสรุปรายเดือน',report:'รายงานความคลาดเคลื่อน',expiry:'ตรวจสอบวันหมดอายุ',add:'บันทึกข้อมูลยา'};
+let currentPage='dashboard';
+
+function navigate(pageId,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+pageId).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if(el)el.classList.add('active');
+  document.getElementById('topbar-title').textContent=pageTitles[pageId]||pageId;
+  currentPage=pageId; closeSidebar();
+  if(pageId==='dashboard')renderDashboard();
+  else if(pageId==='analytics')renderAnalytics();
+  else if(pageId==='report')renderReport();
+  else if(pageId==='expiry')renderExpiry();
+  else if(pageId==='add')resetForm();
+}
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sidebar-overlay').classList.toggle('open')}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('open')}
+function loader(show){document.getElementById('loader').style.display=show?'flex':'none'}
+
+function refreshData(){
+  loader(true);
+  setTimeout(()=>{
+    allData=getDB();
+    renderDashboard();
+    if(currentPage==='analytics')renderAnalytics();
+    else if(currentPage==='report')renderReport();
+    else if(currentPage==='expiry')renderExpiry();
+    updateExpiryBadge();loader(false);
+  },300);
+}
+function updateExpiryBadge(){
+  const c=allData.filter(d=>d.type&&d.type.includes('หมดอายุ')&&!d.actionDone).length;
+  const b=document.getElementById('expiry-badge');
+  if(c>0){b.style.display='';b.textContent=c}else b.style.display='none';
+}
+function dc(key){if(charts[key]){charts[key].destroy();charts[key]=null}}
+function getTypeBadge(t){
+  if(!t)return '<span class="badge badge-gray">-</span>';
+  if(t.includes('3 เดือน'))return`<span class="badge badge-amber">${t}</span>`;
+  if(t.includes('6 เดือน'))return`<span class="badge badge-blue">${t}</span>`;
+  if(t==='หมดอายุแล้ว')return`<span class="badge badge-red">${t}</span>`;
+  return`<span class="badge badge-teal">${t}</span>`;
+}
+const MONTHS=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+// ===== DASHBOARD =====
+function renderDashboard(){
+  const data=allData,total=data.length;
+  const near=data.filter(d=>d.type&&(d.type.includes('3 เดือน')||d.type.includes('6 เดือน'))).length;
+  const expired=data.filter(d=>d.type==='หมดอายุแล้ว').length;
+  const wc=data.filter(d=>d.type==='เก็บยาผิดชั้น').length;
+  const done=data.filter(d=>d.actionDone).length;
+  document.getElementById('d-total').textContent=total;
+  document.getElementById('d-near').textContent=near;
+  document.getElementById('d-expired').textContent=expired;
+  document.getElementById('d-wrong').textContent=total?((wc/total)*100).toFixed(1)+'%':'0%';
+  document.getElementById('d-done').textContent=done;
+  const Y=new Date().getFullYear();
+  const monthly=new Array(12).fill(0),monthlyDone=new Array(12).fill(0);
+  data.forEach(d=>{if(!d.date)return;const dt=new Date(d.date);if(dt.getFullYear()===Y){monthly[dt.getMonth()]++;if(d.actionDone)monthlyDone[dt.getMonth()]++}});
+  dc('dl');
+  charts['dl']=new Chart(document.getElementById('dashLineChart'),{type:'line',data:{labels:MONTHS,datasets:[{label:'ความคลาดเคลื่อนทั้งหมด',data:monthly,borderColor:'#26bfa8',backgroundColor:'rgba(38,191,168,.08)',fill:true,tension:.35,pointRadius:4,pointBackgroundColor:'#00897b',pointBorderColor:'#fff',pointBorderWidth:2},{label:'จัดการแล้ว',data:monthlyDone,borderColor:'#7c4dff',backgroundColor:'rgba(124,77,255,.06)',fill:true,tension:.35,pointRadius:4,pointBackgroundColor:'#7c4dff',pointBorderColor:'#fff',pointBorderWidth:2,borderDash:[5,3]}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:10,font:{family:'IBM Plex Sans Thai',size:11},padding:10}}},scales:{y:{beginAtZero:true,ticks:{stepSize:1,precision:0,font:{family:'IBM Plex Mono',size:10}},grid:{color:'#e8f5f3'}},x:{ticks:{font:{family:'IBM Plex Sans Thai',size:11}},grid:{display:false}}}}});
+  const tc={'เก็บยาผิดชั้น':0,'ใกล้หมดอายุ 3 ด.':0,'ใกล้หมดอายุ 6 ด.':0,'หมดอายุแล้ว':0};
+  data.forEach(d=>{if(!d.type)return;if(d.type==='เก็บยาผิดชั้น')tc['เก็บยาผิดชั้น']++;else if(d.type.includes('3 เดือน'))tc['ใกล้หมดอายุ 3 ด.']++;else if(d.type.includes('6 เดือน'))tc['ใกล้หมดอายุ 6 ด.']++;else if(d.type==='หมดอายุแล้ว')tc['หมดอายุแล้ว']++});
+  dc('dd');
+  charts['dd']=new Chart(document.getElementById('dashDonutChart'),{type:'doughnut',data:{labels:Object.keys(tc),datasets:[{data:Object.values(tc),backgroundColor:['#2979ff','#ffb300','#26bfa8','#ef5350'],borderWidth:0,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'bottom',labels:{boxWidth:9,font:{family:'IBM Plex Sans Thai',size:10},padding:8}}}}});
+}
+
+// ===== ANALYTICS =====
+function populateYearSel(){
+  const sel=document.getElementById('analytics-year');
+  if(sel.options.length>0)return;
+  const years=new Set(allData.map(d=>d.date?new Date(d.date).getFullYear():null).filter(Boolean));
+  const cY=new Date().getFullYear();years.add(cY);
+  [...years].sort((a,b)=>b-a).forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y+' (พ.ศ.'+(y+543)+')';if(y===cY)o.selected=true;sel.appendChild(o)});
+}
+function renderAnalytics(){
+  populateYearSel();
+  const year=parseInt(document.getElementById('analytics-year').value)||new Date().getFullYear();
+  const yd=allData.filter(d=>d.date&&new Date(d.date).getFullYear()===year);
+  const mW=new Array(12).fill(0),mN3=new Array(12).fill(0),mN6=new Array(12).fill(0),mExp=new Array(12).fill(0);
+  const mSt=new Array(12).fill(0),mSh=new Array(12).fill(0),mDe=new Array(12).fill(0),mRe=new Array(12).fill(0);
+  yd.forEach(d=>{
+    const m=new Date(d.date).getMonth();
+    if(d.type==='เก็บยาผิดชั้น')mW[m]++;else if(d.type&&d.type.includes('3 เดือน'))mN3[m]++;else if(d.type&&d.type.includes('6 เดือน'))mN6[m]++;else if(d.type==='หมดอายุแล้ว')mExp[m]++;
+    if(d.action==='ติด Sticker ยาใกล้หมดอายุ')mSt[m]++;else if(d.action==='จัดเก็บลงชั้นให้ถูกต้อง')mSh[m]++;else if(d.action==='คัดแยกออกเพื่อรอทำลาย')mDe[m]++;else if(d.action==='คืนคลังยา')mRe[m]++;
+  });
+  const chartOpts=(stacked=false)=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:10,font:{family:'IBM Plex Sans Thai',size:11},padding:10}}},scales:{x:{stacked,ticks:{font:{family:'IBM Plex Sans Thai',size:11}},grid:{display:false}},y:{stacked,beginAtZero:true,ticks:{stepSize:1,precision:0,font:{family:'IBM Plex Mono',size:10}},grid:{color:'#e8f5f3'}}}});
+  dc('bs');
+  charts['bs']=new Chart(document.getElementById('barStackedChart'),{type:'bar',data:{labels:MONTHS,datasets:[{label:'เก็บผิดชั้น',data:mW,backgroundColor:'#2979ff',borderRadius:3,stack:'s'},{label:'ใกล้หมด 3 ด.',data:mN3,backgroundColor:'#ffb300',borderRadius:3,stack:'s'},{label:'ใกล้หมด 6 ด.',data:mN6,backgroundColor:'#26bfa8',borderRadius:3,stack:'s'},{label:'หมดอายุ',data:mExp,backgroundColor:'#ef5350',borderRadius:3,stack:'s'}]},options:chartOpts(true)});
+  dc('ba');
+  charts['ba']=new Chart(document.getElementById('barActionChart'),{type:'bar',data:{labels:MONTHS,datasets:[{label:'ติด Sticker',data:mSt,backgroundColor:'rgba(255,179,0,.8)',borderRadius:4},{label:'จัดเก็บชั้น',data:mSh,backgroundColor:'rgba(41,121,255,.8)',borderRadius:4},{label:'รอทำลาย',data:mDe,backgroundColor:'rgba(239,83,80,.8)',borderRadius:4},{label:'คืนคลัง',data:mRe,backgroundColor:'rgba(38,191,168,.8)',borderRadius:4}]},options:chartOpts(false)});
+  const tS=mSt.reduce((a,b)=>a+b,0),tSh=mSh.reduce((a,b)=>a+b,0),tD=mDe.reduce((a,b)=>a+b,0),tR=mRe.reduce((a,b)=>a+b,0);
+  dc('da');
+  charts['da']=new Chart(document.getElementById('donutActionChart'),{type:'doughnut',data:{labels:['ติด Sticker','จัดเก็บชั้น','รอทำลาย','คืนคลัง'],datasets:[{data:[tS,tSh,tD,tR],backgroundColor:['#ffb300','#2979ff','#ef5350','#26bfa8'],borderWidth:0,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'bottom',labels:{boxWidth:9,font:{family:'IBM Plex Sans Thai',size:10},padding:8}}}}});
+  document.getElementById('analytics-tbody').innerHTML=MONTHS.map((mo,i)=>{
+    const tot=mW[i]+mN3[i]+mN6[i]+mExp[i],done=mSt[i]+mSh[i]+mDe[i]+mRe[i];
+    return`<tr><td style="font-family:var(--mono);font-size:12px">${mo}</td><td><b style="font-family:var(--mono)">${tot}</b></td><td style="font-family:var(--mono);color:${mW[i]?'var(--blue-800)':'var(--mist)'}">${mW[i]}</td><td style="font-family:var(--mono);color:${mN3[i]?'var(--amber-800)':'var(--mist)'}">${mN3[i]}</td><td style="font-family:var(--mono);color:${mN6[i]?'var(--teal-800)':'var(--mist)'}">${mN6[i]}</td><td style="font-family:var(--mono);color:${mExp[i]?'var(--red-800)':'var(--mist)'}">${mExp[i]}</td><td><span class="${done>0?'badge badge-teal':'badge badge-gray'}">${done}</span></td></tr>`;
+  }).join('');
+}
+
+// ===== REPORT =====
+function setFilter(f,btn){currentFilter=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderReport()}
+function renderReport(){
+  let filtered=allData;
+  if(currentFilter==='wrong')filtered=allData.filter(d=>d.type==='เก็บยาผิดชั้น');
+  else if(currentFilter==='near3')filtered=allData.filter(d=>d.type&&d.type.includes('3 เดือน'));
+  else if(currentFilter==='near6')filtered=allData.filter(d=>d.type&&d.type.includes('6 เดือน'));
+  else if(currentFilter==='expired')filtered=allData.filter(d=>d.type==='หมดอายุแล้ว');
+  filtered.sort((a,b)=>new Date(b.date)-new Date(a.date));
+  document.getElementById('table-count').textContent=`${filtered.length} รายการ`;
+  const tbody=document.getElementById('report-tbody');
+  if(!filtered.length){tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:44px;color:var(--mist)">ไม่พบข้อมูล</td></tr>`;return}
+  tbody.innerHTML=filtered.map(it=>`
+    <tr id="row-${it.id}" style="cursor:pointer" onclick="toggleInlineEdit('${it.id}')">
+      <td style="font-family:var(--mono);font-size:11.5px;color:var(--mist)">${it.date}</td>
+      <td><div class="med-name">${it.name}</div>${it.lot?`<div style="font-size:10.5px;color:var(--mist);font-family:var(--mono)">${it.lot}</div>`:''}</td>
+      <td>${getTypeBadge(it.type)}</td>
+      <td style="font-family:var(--mono);font-size:11.5px">${it.expiry||'-'}</td>
+      <td style="font-size:12px;color:var(--ink-3)">${it.action||'-'}</td>
+      <td><span class="status-pill ${it.actionDone?'status-done':'status-pending'}">${it.actionDone?'✓ เสร็จแล้ว':'⏳ รอดำเนินการ'}</span></td>
+      <td style="text-align:center;white-space:nowrap" onclick="event.stopPropagation()">
+        <button class="btn btn-ghost btn-sm" onclick="toggleInlineEdit('${it.id}')" title="แก้ไขในหน้านี้">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="btn btn-danger btn-sm" onclick="deleteRecord('${it.id}')" title="ลบ">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
+      </td>
+    </tr>
+    <tr id="editrow-${it.id}" style="display:none;background:var(--teal-50)">
+      <td colspan="7" style="padding:0">
+        <div style="padding:18px 20px;border-top:2px solid var(--teal-400)">
+          <div style="font-size:12px;font-weight:600;color:var(--teal-800);font-family:var(--mono);margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+            ✏️ แก้ไขข้อมูล: ${it.name}
+            <span style="margin-left:auto">
+              <button class="btn btn-primary btn-sm" onclick="saveInlineEdit('${it.id}')">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+                บันทึก
+              </button>
+              <button class="btn btn-outline btn-sm" onclick="toggleInlineEdit('${it.id}')">ยกเลิก</button>
+            </span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;flex-wrap:wrap">
+            <div class="form-group"><label class="form-label">วันที่ตรวจพบ</label><input type="date" class="form-input" id="ie-date-${it.id}" value="${it.date}"></div>
+            <div class="form-group"><label class="form-label">ชื่อยา</label><input type="text" class="form-input" id="ie-name-${it.id}" value="${it.name}"></div>
+            <div class="form-group"><label class="form-label">Lot / Batch</label><input type="text" class="form-input" id="ie-lot-${it.id}" value="${it.lot||''}"></div>
+            <div class="form-group"><label class="form-label">จำนวน (หน่วย)</label><input type="number" class="form-input" id="ie-qty-${it.id}" value="${it.qty||''}" min="0"></div>
+            <div class="form-group"><label class="form-label">ประเภทความคลาดเคลื่อน</label>
+              <select class="form-select" id="ie-type-${it.id}" onchange="onIETypeChange('${it.id}')">
+                <option value="เก็บยาผิดชั้น" ${it.type==='เก็บยาผิดชั้น'?'selected':''}>เก็บยาผิดชั้น</option>
+                <option value="ใกล้หมดอายุภายใน 3 เดือน" ${it.type==='ใกล้หมดอายุภายใน 3 เดือน'?'selected':''}>ใกล้หมดอายุภายใน 3 เดือน</option>
+                <option value="ใกล้หมดอายุภายใน 6 เดือน" ${it.type==='ใกล้หมดอายุภายใน 6 เดือน'?'selected':''}>ใกล้หมดอายุภายใน 6 เดือน</option>
+                <option value="หมดอายุแล้ว" ${it.type==='หมดอายุแล้ว'?'selected':''}>หมดอายุแล้ว</option>
+              </select>
+            </div>
+            <div class="form-group" id="ie-expiry-grp-${it.id}" style="display:${it.type&&it.type.includes('หมดอายุ')?'flex':'none'};flex-direction:column;gap:5px">
+              <label class="form-label">วันหมดอายุ</label>
+              <input type="date" class="form-input" id="ie-expiry-${it.id}" value="${it.expiry==='-'?'':it.expiry||''}">
+            </div>
+            <div class="form-group"><label class="form-label">การจัดการ</label>
+              <select class="form-select" id="ie-action-${it.id}">
+                <option value="ติด Sticker ยาใกล้หมดอายุ" ${it.action==='ติด Sticker ยาใกล้หมดอายุ'?'selected':''}>ติด Sticker ยาใกล้หมดอายุ</option>
+                <option value="จัดเก็บลงชั้นให้ถูกต้อง" ${it.action==='จัดเก็บลงชั้นให้ถูกต้อง'?'selected':''}>จัดเก็บลงชั้นให้ถูกต้อง</option>
+                <option value="คัดแยกออกเพื่อรอทำลาย" ${it.action==='คัดแยกออกเพื่อรอทำลาย'?'selected':''}>คัดแยกออกเพื่อรอทำลาย</option>
+                <option value="คืนคลังยา" ${it.action==='คืนคลังยา'?'selected':''}>คืนคลังยา</option>
+              </select>
+            </div>
+            <div class="form-group"><label class="form-label">ผู้ตรวจพบ</label><input type="text" class="form-input" id="ie-inspector-${it.id}" value="${it.inspector||''}"></div>
+            <div class="form-group"><label class="form-label">ตำแหน่ง</label><input type="text" class="form-input" id="ie-position-${it.id}" value="${it.position||''}"></div>
+            <div class="form-group" style="grid-column:1/-1"><label class="form-label">บันทึกเพิ่มเติม</label><textarea class="form-textarea" id="ie-note-${it.id}" style="min-height:60px">${it.note||''}</textarea></div>
+          </div>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function onIETypeChange(id){
+  const v=document.getElementById('ie-type-'+id).value;
+  const grp=document.getElementById('ie-expiry-grp-'+id);
+  if(grp) grp.style.display=v&&v.includes('หมดอายุ')?'flex':'none';
+}
+
+function toggleInlineEdit(id){
+  const row=document.getElementById('editrow-'+id);
+  if(!row) return;
+  const isOpen=row.style.display!=='none';
+  // close all others first
+  document.querySelectorAll('[id^="editrow-"]').forEach(r=>r.style.display='none');
+  document.querySelectorAll('[id^="row-"]').forEach(r=>r.classList.remove('row-editing'));
+  if(!isOpen){
+    row.style.display='';
+    document.getElementById('row-'+id).classList.add('row-editing');
+    row.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+}
+
+function saveInlineEdit(id){
+  const rec=allData.find(d=>d.id===id); if(!rec) return;
+  const newType=document.getElementById('ie-type-'+id).value;
+  const newAction=document.getElementById('ie-action-'+id).value;
+  rec.date=val('ie-date-'+id);
+  rec.name=document.getElementById('ie-name-'+id).value.trim();
+  rec.lot=val('ie-lot-'+id);
+  rec.qty=val('ie-qty-'+id);
+  rec.type=newType;
+  rec.expiry=val('ie-expiry-'+id)||'-';
+  rec.action=newAction;
+  rec.inspector=val('ie-inspector-'+id);
+  rec.position=val('ie-position-'+id);
+  rec.note=val('ie-note-'+id);
+  // auto-done logic
+  if(newType==='เก็บยาผิดชั้น'||newAction==='จัดเก็บลงชั้นให้ถูกต้อง') rec.actionDone=true;
+  const idx=allData.findIndex(d=>d.id===id); allData[idx]=rec;
+  saveDB(allData); updateExpiryBadge();
+  // ปิด editrow ก่อน re-render
+  const editrow=document.getElementById('editrow-'+id);
+  if(editrow) editrow.style.display='none';
+  const mainrow=document.getElementById('row-'+id);
+  if(mainrow) mainrow.classList.remove('row-editing');
+  Swal.fire({icon:'success',title:'อัปเดตแล้ว!',timer:1100,showConfirmButton:false});
+  renderReport(); renderDashboard();
+}
+
+// ===== EXPIRY =====
+function populateExpiryYears(){
+  const sel=document.getElementById('expiry-filter-year');
+  if(!sel)return;
+  // collect unique CE years from expiry dates
+  const yearsSet=new Set();
+  allData.forEach(d=>{
+    if(d.expiry&&d.expiry!=='-'){
+      const y=new Date(d.expiry).getFullYear();
+      if(!isNaN(y))yearsSet.add(y);
+    }
+  });
+  // keep current selection
+  const cur=sel.value;
+  // rebuild options (keep "ทั้งหมด" first)
+  sel.innerHTML='<option value="">ทั้งหมด</option>';
+  [...yearsSet].sort((a,b)=>a-b).forEach(y=>{
+    const o=document.createElement('option');
+    o.value=y;
+    o.textContent=(y+543)+' ('+y+')';
+    if(String(y)===cur)o.selected=true;
+    sel.appendChild(o);
+  });
+  if(!yearsSet.size){
+    // fallback: add current year and next 2
+    const cy=new Date().getFullYear();
+    [cy,cy+1,cy+2].forEach(y=>{
+      const o=document.createElement('option');
+      o.value=y;o.textContent=(y+543)+' ('+y+')';
+      if(String(y)===cur)o.selected=true;
+      sel.appendChild(o);
+    });
+  }
+}
+
+function clearExpiryFilters(){
+  const m=document.getElementById('expiry-filter-month');
+  const y=document.getElementById('expiry-filter-year');
+  const s=document.getElementById('expiry-filter-status');
+  if(m)m.value='';if(y)y.value='';if(s)s.value='';
+  renderExpiry();
+}
+
+function renderExpiry(){
+  populateExpiryYears();
+  const filterMonth=document.getElementById('expiry-filter-month')?document.getElementById('expiry-filter-month').value:'';
+  const filterYear=document.getElementById('expiry-filter-year')?document.getElementById('expiry-filter-year').value:'';
+  const filterStatus=document.getElementById('expiry-filter-status')?document.getElementById('expiry-filter-status').value:'';
+
+  let targets=allData.filter(d=>d.type&&d.type.includes('หมดอายุ'));
+
+  // filter by expiry month/year
+  if(filterMonth||filterYear){
+    targets=targets.filter(d=>{
+      if(!d.expiry||d.expiry==='-')return false;
+      const dt=new Date(d.expiry);
+      if(isNaN(dt))return false;
+      const mMatch=!filterMonth||(dt.getMonth()+1)===parseInt(filterMonth);
+      const yMatch=!filterYear||dt.getFullYear()===parseInt(filterYear);
+      return mMatch&&yMatch;
+    });
+  }
+  // filter by status
+  if(filterStatus==='pending')targets=targets.filter(d=>!d.actionDone);
+  else if(filterStatus==='done')targets=targets.filter(d=>d.actionDone);
+
+  const countEl=document.getElementById('expiry-count');
+  if(countEl)countEl.textContent=targets.length+' รายการ';
+
+  const list=document.getElementById('expiry-list');
+  if(!targets.length){
+    const hasFilter=filterMonth||filterYear||filterStatus;
+    list.innerHTML=`<div class="empty-state"><div class="empty-icon">${hasFilter?'🔍':'✅'}</div><div class="empty-text">${hasFilter?'ไม่พบรายการที่ตรงกับตัวกรองที่เลือก':'ไม่มียาใกล้หมดอายุในระบบขณะนี้'}</div></div>`;
+    return;
+  }
+  targets.sort((a,b)=>{
+    const pa=a.type==='หมดอายุแล้ว'?0:a.type.includes('3')?1:2;
+    const pb=b.type==='หมดอายุแล้ว'?0:b.type.includes('3')?1:2;
+    return pa-pb||(a.actionDone?1:-1);
+  });
+  list.innerHTML=targets.map(m=>{
+    const cls=m.type==='หมดอายุแล้ว'?'critical':m.type.includes('3')?'warning':'info';
+    return`<div class="expiry-card ${cls}" id="ec-${m.id}">
+      <div class="expiry-card-header" onclick="toggleCard('${m.id}')">
+        <div style="flex:1">
+          <div class="expiry-med">${m.name}${m.lot?` <span style="font-size:11px;color:var(--mist);font-family:var(--mono);font-weight:400">${m.lot}</span>`:''}</div>
+          <div style="margin:4px 0">${getTypeBadge(m.type)} <span class="status-pill ${m.actionDone?'status-done':'status-pending'}" style="margin-left:6px">${m.actionDone?'✓ ดำเนินการแล้ว':'⏳ รอดำเนินการ'}</span></div>
+          <div class="expiry-meta">วันหมดอายุ: ${m.expiry||'-'} &nbsp;|&nbsp; จำนวน: ${m.qty||'-'} หน่วย &nbsp;|&nbsp; ผู้ตรวจ: ${m.inspector||'-'}</div>
+        </div>
+        <svg class="chevron" id="chv-${m.id}" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="expiry-card-body" id="eb-${m.id}">
+        <div class="detail-grid">
+          <div class="detail-item"><div class="detail-label">วันที่บันทึก</div><div class="detail-value">${m.date}</div></div>
+          <div class="detail-item"><div class="detail-label">ประเภทความคลาดเคลื่อน</div><div class="detail-value">${m.type}</div></div>
+          <div class="detail-item"><div class="detail-label">การจัดการที่กำหนด</div><div class="detail-value highlight">${m.action}</div></div>
+          <div class="detail-item"><div class="detail-label">ผู้ตรวจพบ / ตำแหน่ง</div><div class="detail-value">${m.inspector||'-'}${m.position?' ('+m.position+')':''}</div></div>
+          ${m.note?`<div class="detail-item" style="grid-column:1/-1"><div class="detail-label">หมายเหตุ</div><div class="detail-value">${m.note}</div></div>`:''}
+        </div>
+        <div class="inspect-form">
+          <div class="inspect-title">📝 รายละเอียดการดำเนินการ — ${m.action}</div>
+          ${buildDetailForm(m)}
+          <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primary btn-sm" onclick="saveDetail('${m.id}')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+              บันทึกรายละเอียด
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="editRecord('${m.id}')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              แก้ไขข้อมูลหลัก
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function buildDetailForm(m){
+  const id=m.id;
+  if(m.action==='คัดแยกออกเพื่อรอทำลาย')return`
+    <div class="inspect-grid">
+      <div class="form-group"><label class="form-label">วันที่คัดแยกแล้ว</label><input type="date" class="form-input" id="dd-sep-${id}" value="${m.destroyDate||''}"></div>
+      <div class="form-group"><label class="form-label">ผู้ดำเนินการคัดแยก</label><input type="text" class="form-input" id="dd-by-${id}" value="${m.destroyBy||''}" placeholder="ชื่อ-สกุล หรือ คณะกรรมการ"></div>
+      <div class="form-group"><label class="form-label">วันที่ทำลายจริง</label><input type="date" class="form-input" id="dd-actual-${id}" value="${m.destroyActual||''}"></div>
+      <div class="form-group"><label class="form-label">เลขที่เอกสารทำลาย</label><input type="text" class="form-input" id="dd-doc-${id}" value="${m.destroyDoc||''}" placeholder="เช่น DES-2024-001"></div>
+    </div>
+    <div class="check-grid">
+      <div class="check-item"><input type="checkbox" id="dc1-${id}" ${m.chkSeparated?'checked':''}><label for="dc1-${id}">คัดแยกออกจากยาปกติแล้ว</label></div>
+      <div class="check-item"><input type="checkbox" id="dc2-${id}" ${m.chkLabeled?'checked':''}><label for="dc2-${id}">ติดป้าย "รอทำลาย" แล้ว</label></div>
+      <div class="check-item"><input type="checkbox" id="dc3-${id}" ${m.chkStored?'checked':''}><label for="dc3-${id}">เก็บในพื้นที่พักรอทำลาย</label></div>
+      <div class="check-item"><input type="checkbox" id="dc4-${id}" ${m.chkReported?'checked':''}><label for="dc4-${id}">รายงานผู้รับผิดชอบแล้ว</label></div>
+      <div class="check-item"><input type="checkbox" id="dc5-${id}" ${m.chkDestroyed?'checked':''}><label for="dc5-${id}">ทำลายเสร็จสิ้นแล้ว</label></div>
+      <div class="check-item done-check"><input type="checkbox" id="dd-done-${id}" ${m.actionDone?'checked':''}><label for="dd-done-${id}">✓ ดำเนินการครบถ้วนแล้ว</label></div>
+    </div>
+    <div class="form-group" style="margin-top:8px"><label class="form-label">หมายเหตุเพิ่มเติม</label><textarea class="form-textarea" id="dd-note-${id}" style="min-height:52px" placeholder="รายละเอียดเพิ่มเติมเกี่ยวกับการทำลาย...">${m.destroyNote||''}</textarea></div>`;
+
+  if(m.action==='คืนคลังยา')return`
+    <div class="inspect-grid">
+      <div class="form-group"><label class="form-label">วันที่คืนคลัง</label><input type="date" class="form-input" id="rd-date-${id}" value="${m.returnDate||''}"></div>
+      <div class="form-group"><label class="form-label">คลัง/แผนกที่คืน</label><input type="text" class="form-input" id="rd-dept-${id}" value="${m.returnDept||''}" placeholder="เช่น คลังยากลาง, คลังหมายเลข 2"></div>
+      <div class="form-group"><label class="form-label">ผู้รับยาคืน</label><input type="text" class="form-input" id="rd-recv-${id}" value="${m.returnReceiver||''}" placeholder="ชื่อผู้รับ"></div>
+      <div class="form-group"><label class="form-label">เลขที่เอกสารคืน</label><input type="text" class="form-input" id="rd-doc-${id}" value="${m.returnDoc||''}" placeholder="เช่น RET-2024-001"></div>
+    </div>
+    <div class="check-grid">
+      <div class="check-item"><input type="checkbox" id="rc1-${id}" ${m.chkReturnDoc?'checked':''}><label for="rc1-${id}">จัดทำเอกสารคืนคลังแล้ว</label></div>
+      <div class="check-item"><input type="checkbox" id="rc2-${id}" ${m.chkReturnSent?'checked':''}><label for="rc2-${id}">ส่งยาถึงคลังแล้ว</label></div>
+      <div class="check-item done-check"><input type="checkbox" id="rd-done-${id}" ${m.actionDone?'checked':''}><label for="rd-done-${id}">✓ คืนคลังครบถ้วนแล้ว</label></div>
+    </div>
+    <div class="form-group" style="margin-top:8px"><label class="form-label">หมายเหตุ</label><textarea class="form-textarea" id="rd-note-${id}" style="min-height:52px" placeholder="รายละเอียดเพิ่มเติม...">${m.returnNote||''}</textarea></div>`;
+
+  if(m.action==='ติด Sticker ยาใกล้หมดอายุ')return`
+    <div class="inspect-grid">
+      <div class="form-group"><label class="form-label">วันที่ติด Sticker</label><input type="date" class="form-input" id="st-date-${id}" value="${m.stickerDate||''}"></div>
+      <div class="form-group"><label class="form-label">ผู้ติด Sticker</label><input type="text" class="form-input" id="st-by-${id}" value="${m.stickerBy||''}" placeholder="ชื่อ-สกุล"></div>
+      <div class="form-group"><label class="form-label">จำนวนที่ติด (หน่วย)</label><input type="number" class="form-input" id="st-qty-${id}" value="${m.stickerQty||''}" placeholder="0" min="0"></div>
+      <div class="form-group"><label class="form-label">ตำแหน่งจัดเก็บ</label><input type="text" class="form-input" id="st-loc-${id}" value="${m.stickerLocation||''}" placeholder="เช่น ชั้น A-3, ตู้เย็น"></div>
+    </div>
+    <div class="check-grid">
+      <div class="check-item"><input type="checkbox" id="sc1-${id}" ${m.chkStickerDone?'checked':''}><label for="sc1-${id}">ติด Sticker ครบทุกแผงแล้ว</label></div>
+      <div class="check-item"><input type="checkbox" id="sc2-${id}" ${m.chkFront?'checked':''}><label for="sc2-${id}">วางยาไว้ด้านหน้าชั้น (FEFO)</label></div>
+      <div class="check-item"><input type="checkbox" id="sc3-${id}" ${m.chkNotified?'checked':''}><label for="sc3-${id}">แจ้งเจ้าหน้าที่ที่เกี่ยวข้องแล้ว</label></div>
+    </div>
+    <div class="form-group" style="margin-top:8px"><label class="form-label">หมายเหตุการติด Sticker</label><textarea class="form-textarea" id="st-note-${id}" style="min-height:48px" placeholder="รายละเอียดเพิ่มเติม...">${m.stickerNote||''}</textarea></div>
+    <div style="margin-top:14px;padding:14px;background:var(--red-100);border:1px solid #ffb3b0;border-radius:10px;">
+      <div style="font-size:12px;font-weight:600;color:var(--red-800);font-family:var(--mono);margin-bottom:10px;">🗑️ คัดแยกออกเพื่อรอทำลาย <span style="font-weight:400;color:var(--red-400)">(กรอกเมื่อมีการดำเนินการ — ระบบจะอัปเดตสถานะเป็น "เสร็จแล้ว" อัตโนมัติ)</span></div>
+      <div class="inspect-grid">
+        <div class="form-group"><label class="form-label">วันที่คัดแยกแล้ว</label><input type="date" class="form-input" id="dd-sep-${id}" value="${m.destroyDate||''}"></div>
+        <div class="form-group"><label class="form-label">ผู้ดำเนินการคัดแยก</label><input type="text" class="form-input" id="dd-by-${id}" value="${m.destroyBy||''}" placeholder="ชื่อ-สกุล หรือ คณะกรรมการ"></div>
+        <div class="form-group"><label class="form-label">วันที่ทำลายจริง</label><input type="date" class="form-input" id="dd-actual-${id}" value="${m.destroyActual||''}"></div>
+        <div class="form-group"><label class="form-label">เลขที่เอกสารทำลาย</label><input type="text" class="form-input" id="dd-doc-${id}" value="${m.destroyDoc||''}" placeholder="เช่น DES-2024-001"></div>
+      </div>
+      <div class="check-grid">
+        <div class="check-item"><input type="checkbox" id="dc1-${id}" ${m.chkSeparated?'checked':''}><label for="dc1-${id}">คัดแยกออกจากยาปกติแล้ว</label></div>
+        <div class="check-item"><input type="checkbox" id="dc2-${id}" ${m.chkLabeled?'checked':''}><label for="dc2-${id}">ติดป้าย "รอทำลาย" แล้ว</label></div>
+        <div class="check-item"><input type="checkbox" id="dc3-${id}" ${m.chkStored?'checked':''}><label for="dc3-${id}">เก็บในพื้นที่พักรอทำลาย</label></div>
+        <div class="check-item"><input type="checkbox" id="dc4-${id}" ${m.chkReported?'checked':''}><label for="dc4-${id}">รายงานผู้รับผิดชอบแล้ว</label></div>
+        <div class="check-item"><input type="checkbox" id="dc5-${id}" ${m.chkDestroyed?'checked':''}><label for="dc5-${id}">ทำลายเสร็จสิ้นแล้ว</label></div>
+      </div>
+      <div class="form-group" style="margin-top:8px"><label class="form-label">หมายเหตุการทำลาย</label><textarea class="form-textarea" id="dd-note-${id}" style="min-height:48px" placeholder="รายละเอียดเพิ่มเติม...">${m.destroyNote||''}</textarea></div>
+    </div>`;
+
+  // default (จัดเก็บลงชั้น / อื่นๆ)
+  return`
+    <div class="inspect-grid">
+      <div class="form-group"><label class="form-label">วันที่ดำเนินการ</label><input type="date" class="form-input" id="gd-date-${id}" value="${m.actionDate||''}"></div>
+      <div class="form-group"><label class="form-label">ผู้ดำเนินการ</label><input type="text" class="form-input" id="gd-by-${id}" value="${m.actionBy||''}" placeholder="ชื่อ-สกุล"></div>
+    </div>
+    <div class="check-grid">
+      <div class="check-item done-check"><input type="checkbox" id="gd-done-${id}" ${m.actionDone?'checked':''}><label for="gd-done-${id}">✓ ดำเนินการครบถ้วนแล้ว</label></div>
+    </div>
+    <div class="form-group" style="margin-top:8px"><label class="form-label">หมายเหตุ</label><textarea class="form-textarea" id="gd-note-${id}" style="min-height:52px" placeholder="รายละเอียดเพิ่มเติม...">${m.actionNote||''}</textarea></div>`;
+}
+
+function toggleCard(id){
+  document.getElementById('eb-'+id).classList.toggle('open');
+  document.getElementById('chv-'+id).classList.toggle('open');
+}
+
+function saveDetail(id){
+  const rec=allData.find(d=>d.id===id);if(!rec)return;
+  if(rec.action==='คัดแยกออกเพื่อรอทำลาย'){
+    rec.destroyDate=val('dd-sep-'+id);rec.destroyBy=val('dd-by-'+id);
+    rec.destroyActual=val('dd-actual-'+id);rec.destroyDoc=val('dd-doc-'+id);
+    rec.chkSeparated=chk('dc1-'+id);rec.chkLabeled=chk('dc2-'+id);
+    rec.chkStored=chk('dc3-'+id);rec.chkReported=chk('dc4-'+id);rec.chkDestroyed=chk('dc5-'+id);
+    rec.destroyNote=val('dd-note-'+id);
+    // auto-done ถ้ากรอกข้อมูลใดก็ตาม
+    const hasDestroy=rec.destroyDate||rec.destroyBy||rec.destroyActual||rec.destroyDoc||rec.chkSeparated||rec.chkLabeled||rec.chkStored||rec.chkReported||rec.chkDestroyed;
+    rec.actionDone=hasDestroy?true:chk('dd-done-'+id);
+  }else if(rec.action==='คืนคลังยา'){
+    rec.returnDate=val('rd-date-'+id);rec.returnDept=val('rd-dept-'+id);
+    rec.returnReceiver=val('rd-recv-'+id);rec.returnDoc=val('rd-doc-'+id);
+    rec.chkReturnDoc=chk('rc1-'+id);rec.chkReturnSent=chk('rc2-'+id);
+    rec.returnNote=val('rd-note-'+id);
+    // auto-done ถ้ากรอกข้อมูลใดก็ตาม
+    const hasReturn=rec.returnDate||rec.returnDept||rec.returnReceiver||rec.returnDoc||rec.chkReturnDoc||rec.chkReturnSent;
+    rec.actionDone=hasReturn?true:chk('rd-done-'+id);
+  }else if(rec.action==='ติด Sticker ยาใกล้หมดอายุ'){
+    rec.stickerDate=val('st-date-'+id);rec.stickerBy=val('st-by-'+id);
+    rec.stickerQty=val('st-qty-'+id);rec.stickerLocation=val('st-loc-'+id);
+    rec.chkStickerDone=chk('sc1-'+id);rec.chkFront=chk('sc2-'+id);rec.chkNotified=chk('sc3-'+id);
+    rec.stickerNote=val('st-note-'+id);
+    // collect destroy fields (shared field IDs with destroy action)
+    rec.destroyDate=val('dd-sep-'+id);rec.destroyBy=val('dd-by-'+id);
+    rec.destroyActual=val('dd-actual-'+id);rec.destroyDoc=val('dd-doc-'+id);
+    rec.chkSeparated=chk('dc1-'+id);rec.chkLabeled=chk('dc2-'+id);
+    rec.chkStored=chk('dc3-'+id);rec.chkReported=chk('dc4-'+id);rec.chkDestroyed=chk('dc5-'+id);
+    rec.destroyNote=val('dd-note-'+id);
+    // auto-set done if any destroy field filled
+    const hasDestroyData = rec.destroyDate||rec.destroyBy||rec.destroyActual||rec.destroyDoc||rec.chkSeparated||rec.chkLabeled||rec.chkStored||rec.chkReported||rec.chkDestroyed;
+    rec.actionDone = hasDestroyData ? true : (rec.stickerDate||rec.chkStickerDone ? rec.actionDone : false);
+  }else{
+    rec.actionDate=val('gd-date-'+id);rec.actionBy=val('gd-by-'+id);
+    rec.actionDone=chk('gd-done-'+id);rec.actionNote=val('gd-note-'+id);
+  }
+  const idx=allData.findIndex(d=>d.id===id);allData[idx]=rec;saveDB(allData);updateExpiryBadge();
+  Swal.fire({icon:'success',title:'บันทึกแล้ว!',timer:1200,showConfirmButton:false});
+  renderExpiry(); renderDashboard();
+  setTimeout(()=>{const b=document.getElementById('eb-'+id),c=document.getElementById('chv-'+id);if(b&&!b.classList.contains('open')){b.classList.add('open');c&&c.classList.add('open')}},100);
+}
+
+// ===== FORM =====
+function onTypeChange(){
+  const v=document.getElementById('f-type').value;
+  const show=v&&v.includes('หมดอายุ');
+  document.getElementById('expiry-group').style.display=show?'':'none';
+  document.getElementById('f-expiry').required=show;
+}
+function onActionChange(){
+  const v=document.getElementById('f-action').value;
+  const box=document.getElementById('inline-action-box');
+  const con=document.getElementById('inline-action-content');
+  if(!v){box.classList.remove('show');return}
+  box.classList.add('show');
+  if(v==='คัดแยกออกเพื่อรอทำลาย')
+    con.innerHTML=`<p style="font-size:12px;font-weight:600;color:var(--red-800);font-family:var(--mono);margin-bottom:10px">📋 รายละเอียดเบื้องต้น (กรอกเพิ่มเติมได้ในหน้าตรวจสอบวันหมดอายุ)</p><div class="inline-action-grid"><div class="form-group"><label class="form-label">วันที่คัดแยก</label><input type="date" class="form-input" id="ia-dd"></div><div class="form-group"><label class="form-label">ผู้ดำเนินการ</label><input type="text" class="form-input" id="ia-db" placeholder="ชื่อ-สกุล"></div></div>`;
+  else if(v==='คืนคลังยา')
+    con.innerHTML=`<p style="font-size:12px;font-weight:600;color:var(--blue-800);font-family:var(--mono);margin-bottom:10px">📋 รายละเอียดการคืนคลัง</p><div class="inline-action-grid"><div class="form-group"><label class="form-label">วันที่คืนคลัง</label><input type="date" class="form-input" id="ia-rd"></div><div class="form-group"><label class="form-label">คลัง/แผนก</label><input type="text" class="form-input" id="ia-rp" placeholder="เช่น คลังยากลาง"></div></div>`;
+  else if(v==='ติด Sticker ยาใกล้หมดอายุ')
+    con.innerHTML=`<p style="font-size:12px;font-weight:600;color:var(--amber-800);font-family:var(--mono);margin-bottom:10px">📋 รายละเอียดการติด Sticker</p><div class="inline-action-grid"><div class="form-group"><label class="form-label">วันที่ติด Sticker</label><input type="date" class="form-input" id="ia-sd"></div><div class="form-group"><label class="form-label">ผู้ติด Sticker</label><input type="text" class="form-input" id="ia-sb" placeholder="ชื่อ-สกุล"></div></div>`;
+  else con.innerHTML=`<p style="font-size:12px;color:var(--mist)">สามารถกรอกรายละเอียดเพิ่มเติมได้ที่หน้า "ตรวจสอบวันหมดอายุ"</p>`;
+  // populate existing values if editing
+  const eId=document.getElementById('editId').value;
+  if(eId){
+    const er=allData.find(d=>d.id===eId);
+    if(er){
+      if(v==='คัดแยกออกเพื่อรอทำลาย'){dval('ia-dd',er.destroyDate);dval('ia-db',er.destroyBy);}
+      else if(v==='คืนคลังยา'){dval('ia-rd',er.returnDate);dval('ia-rp',er.returnDept);}
+      else if(v==='ติด Sticker ยาใกล้หมดอายุ'){dval('ia-sd',er.stickerDate);dval('ia-sb',er.stickerBy);}
+    }
+  }
+}
+
+function resetForm(){
+  document.getElementById('editId').value='';
+  document.getElementById('prepackForm').reset();
+  document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('expiry-group').style.display='none';
+  document.getElementById('inline-action-box').classList.remove('show');
+  document.getElementById('form-page-title').textContent='บันทึกข้อมูลความคลาดเคลื่อน';
+  document.getElementById('form-header').innerHTML=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> บันทึกรายการใหม่`;
+  document.getElementById('btn-submit').innerHTML=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> บันทึกข้อมูล`;
+}
+function cancelForm(){
+  const e=document.getElementById('editId').value;
+  if(e){
+    const navSel="[onclick*='"+_editFromPage+"']";
+    const navEl=document.querySelector(navSel);
+    navigate(_editFromPage, navEl);
+  } else { resetForm(); }
+}
+
+document.getElementById('prepackForm').addEventListener('submit',function(e){
+  e.preventDefault();
+  const editId=document.getElementById('editId').value;
+  const action=document.getElementById('f-action').value;
+  let extra={};
+  try{
+    if(action==='คัดแยกออกเพื่อรอทำลาย'){extra={destroyDate:val('ia-dd')||'',destroyBy:val('ia-db')||''}}
+    else if(action==='คืนคลังยา'){extra={returnDate:val('ia-rd')||'',returnDept:val('ia-rp')||''}}
+    else if(action==='ติด Sticker ยาใกล้หมดอายุ'){extra={stickerDate:val('ia-sd')||'',stickerBy:val('ia-sb')||''}}
+  }catch(e){}
+  const existing=editId?(allData.find(d=>d.id===editId)||{}):{}; 
+  const record={
+    ...existing,
+    id:editId||Date.now().toString(),
+    date:val('f-date'),name:document.getElementById('f-name').value.trim(),
+    lot:val('f-lot'),qty:val('f-qty'),
+    type:document.getElementById('f-type').value,
+    expiry:val('f-expiry')||'-',
+    action,
+    inspector:val('f-inspector'),position:val('f-position'),note:val('f-note'),
+    ...extra,
+    actionDone: document.getElementById('f-type').value==='เก็บยาผิดชั้น' ? true : (existing.actionDone||false)
+  };
+  Swal.fire({title:editId?'ยืนยันการแก้ไข?':'ยืนยันการบันทึก?',text:`บันทึกข้อมูล: ${record.name}`,icon:'question',showCancelButton:true,confirmButtonText:'ยืนยัน',cancelButtonText:'ยกเลิก',confirmButtonColor:'#00897b'}).then(res=>{
+    if(res.isConfirmed){
+      loader(true);
+      setTimeout(()=>{
+        let db=getDB();
+        if(editId){const i=db.findIndex(d=>d.id===editId);if(i!==-1)db[i]=record}else db.push(record);
+        saveDB(db);allData=db;updateExpiryBadge();loader(false);
+        Swal.fire({icon:'success',title:'สำเร็จ!',text:editId?'อัปเดตข้อมูลแล้ว':'บันทึกข้อมูลแล้ว',timer:1400,showConfirmButton:false});
+        const _backNav=_editFromPage&&_editFromPage!=='add'?_editFromPage:'dashboard';
+        navigate(_backNav,document.querySelector("[onclick*='"+_backNav+"']"));
+      },400);
+    }
+  });
+});
+
+let _editFromPage = 'report';
+function editRecord(id, fromPage){
+  const r=allData.find(d=>d.id===id);if(!r)return;
+  _editFromPage = fromPage || currentPage || 'report';
+  dval('editId',r.id);dval('f-date',r.date);document.getElementById('f-name').value=r.name;
+  dval('f-lot',r.lot);dval('f-qty',r.qty);
+  document.getElementById('f-type').value=r.type;
+  dval('f-expiry',r.expiry==='-'?'':r.expiry);
+  document.getElementById('f-action').value=r.action;
+  dval('f-inspector',r.inspector);dval('f-position',r.position);dval('f-note',r.note);
+  document.getElementById('form-page-title').textContent='แก้ไขข้อมูล: '+r.name;
+  document.getElementById('form-header').innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> แก้ไขข้อมูล: '+r.name;
+  document.getElementById('btn-submit').innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> อัปเดตการแก้ไข';
+  onTypeChange(); onActionChange();
+  navigate('add', document.querySelector("[onclick*='add']"));
+}
+
+function deleteRecord(id){
+  const r=allData.find(d=>d.id===id);if(!r)return;
+  Swal.fire({title:'ยืนยันการลบ?',text:`"${r.name}" จะถูกลบออกจากระบบ`,icon:'warning',showCancelButton:true,confirmButtonText:'ลบทิ้ง',cancelButtonText:'ยกเลิก',confirmButtonColor:'#ef5350'}).then(res=>{
+    if(res.isConfirmed){
+      loader(true);
+      setTimeout(()=>{
+        let db=getDB().filter(d=>d.id!==id);saveDB(db);allData=db;
+        updateExpiryBadge();renderReport();renderDashboard();
+        if(currentPage==='expiry')renderExpiry();
+        loader(false);
+        Swal.fire({icon:'success',title:'ลบแล้ว',timer:1200,showConfirmButton:false});
+      },300);
+    }
+  });
+}
+
+seedData();refreshData();
+</script>
+</body>
+</html>
